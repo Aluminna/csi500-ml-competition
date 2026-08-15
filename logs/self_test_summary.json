@@ -1,0 +1,61 @@
+{
+  "model": "66% original submission-1 model + 34% official-style XGB baseline",
+  "final_as_of": "20260508",
+  "recipe": {
+    "original_weight": 0.66,
+    "baseline_weight": 0.34,
+    "top_k": 34,
+    "reweight": "equal"
+  },
+  "current_sources": {
+    "original": "submissions/original_submission1_model_asof20260508.csv",
+    "baseline_xgb": "submissions/phase2_baseline_xgb_asof20260508.csv"
+  },
+  "rolling_sources": {
+    "original_template": "submissions/rolling_3d_compare/pure_lgb_k40_sqrt_{asof}.csv",
+    "baseline_template": "submissions/rolling_3d_baseline_xgb_phase2/baseline_xgb_{asof}.csv"
+  },
+  "reproducibility_check": {
+    "same_set": true,
+    "same_order": true,
+    "max_abs_weight_diff": 3.469446951953614e-18,
+    "n_stocks": 34,
+    "sum_weight": 1.0,
+    "max_weight": 0.029411764705882353
+  },
+  "baseline_comparison": [
+    {
+      "split": "validation",
+      "n_windows": 4,
+      "mean_excess_advantage_vs_baseline_xgb": -0.0029828521879581085,
+      "cumulative_excess_advantage_vs_baseline_xgb": -0.012927731299577916,
+      "hit_rate_vs_baseline_xgb": 0.25,
+      "final_selection_ic_advantage_vs_baseline_same_k": -0.04348227583391038,
+      "raw_blend_ic_advantage_vs_baseline_raw": -0.005678046289740633
+    },
+    {
+      "split": "test",
+      "n_windows": 3,
+      "mean_excess_advantage_vs_baseline_xgb": 0.021614482956852876,
+      "cumulative_excess_advantage_vs_baseline_xgb": 0.06920891259337969,
+      "hit_rate_vs_baseline_xgb": 1.0,
+      "final_selection_ic_advantage_vs_baseline_same_k": 0.09934296832690374,
+      "raw_blend_ic_advantage_vs_baseline_raw": 0.064803600685819
+    },
+    {
+      "split": "all",
+      "n_windows": 7,
+      "mean_excess_advantage_vs_baseline_xgb": 0.00755886287410374,
+      "cumulative_excess_advantage_vs_baseline_xgb": 0.057390111591068216,
+      "hit_rate_vs_baseline_xgb": 0.5714285714285714,
+      "final_selection_ic_advantage_vs_baseline_same_k": 0.017728543092152813,
+      "raw_blend_ic_advantage_vs_baseline_raw": 0.02452837384264206
+    }
+  ],
+  "notes": [
+    "For every self-test row, as_of is strictly before eval_start.",
+    "The same fixed 66/34 top34-equal recipe is applied at every as-of date.",
+    "Rank IC is Spearman correlation between model-generated portfolio score and future 5-day stock return.",
+    "The final IC uses the top34 equal-weight selection signal, coded as zero for unselected stocks."
+  ]
+}

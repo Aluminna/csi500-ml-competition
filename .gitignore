@@ -1,0 +1,22 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.DS_Store
+.env
+.env.*
+!.env.example
+.claude/
+
+# Downloaded market data and derived model artifacts
+data/*
+!data/.gitkeep
+models/
+*.pkl
+*.joblib
+
+# Local experiment outputs
+factor_experiments_slim_asof20260430/models/
+factor_experiments_slim_asof20260430/logs/
+factor_experiments_slim_asof20260430/submissions/
