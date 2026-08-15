@@ -1,6 +1,8 @@
 # CSI 500 Machine Learning Competition
 
-An end-to-end portfolio modeling project for a CSI 500 machine-learning competition. The repository contains OHLCV feature engineering, LightGBM and XGBoost components, walk-forward evaluation, portfolio construction, and the exact Phase 2 submission recipe.
+This is the final project for Machine Learning course for Spring 2026 in NYU Shanghai. You may check the competition information here: https://github.com/NYUSH-ML/ml-competition-sp26
+
+The repository contains OHLCV feature engineering, LightGBM and XGBoost components, walk-forward evaluation, portfolio construction, and the exact Phase 2 submission recipe.
 
 > Educational and research use only. This repository is not investment advice and does not represent a live trading strategy.
 
@@ -24,7 +26,7 @@ submissions/Yuxin_He_week2_orig66_xgb34_k34.csv
 The submitted portfolio is a fixed-weight portfolio-level ensemble of two model-generated portfolios:
 
 1. `original_submission1_model_asof20260508.csv`
-   - Updated version of my Phase 1 LGB-style model portfolio.
+   - A LGB-style model portfolio.
    - The rolling self-test uses historical `pure_lgb_k40_sqrt_<asof>.csv` component portfolios generated at the corresponding as-of dates.
 
 2. `phase2_baseline_xgb_asof20260508.csv`
