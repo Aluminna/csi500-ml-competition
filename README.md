@@ -1,10 +1,10 @@
-# Short-Horizon CSI 500 Portfolio Model
+# Machine Learning Final Project
 
 This is the final project for the Machine Learning course in Spring 2026 at NYU Shanghai. The competition repository is available at https://github.com/NYUSH-ML/ml-competition-sp26.
 
-This repository contains my final code package for the CSI 500 machine-learning portfolio competition. The project builds a long-only portfolio from model-generated stock-selection signals, validates the final CSV against the competition rules, and reports a chronological no-leakage self-test.
+This repository contains my final code package for the CSI 500 machine-learning competition. The project builds a long-only portfolio from model-generated stock-selection signals, validates the final CSV against the competition rules, and reports a chronological no-leakage self-test.
 
-> Educational project only. This repository is not investment advice and does not represent a live trading strategy.
+> This repository is not investment advice and is used only for education.
 
 ## Final Submission
 
@@ -263,7 +263,3 @@ IC summary from `logs/self_test_ic_summary.csv`:
 - The final blend weights and top-34 equal-weight rule are fixed across windows.
 - No external data, private data, other students' submissions, or manual stock-picking overlay is used.
 - Raw data files are excluded from Git; download them locally before running the full self-test.
-
-## Academic Integrity Note
-
-All model design, feature engineering, training logic, portfolio construction, and final selection decisions are documented in this repository and the accompanying report. AI coding assistants were used for implementation help and debugging, not for private data access or manual trading decisions.
