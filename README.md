@@ -1,47 +1,67 @@
-# CSI 500 Machine Learning Competition
+# Short-Horizon CSI 500 Portfolio Model
 
-This is the final project for Machine Learning course for Spring 2026 in NYU Shanghai. You may check the competition information here: https://github.com/NYUSH-ML/ml-competition-sp26
+This is the final project for the Machine Learning course in Spring 2026 at NYU Shanghai. The competition repository is available at https://github.com/NYUSH-ML/ml-competition-sp26.
 
-The repository contains OHLCV feature engineering, LightGBM and XGBoost components, walk-forward evaluation, portfolio construction, and the exact Phase 2 submission recipe.
+This repository contains my final code package for the CSI 500 machine-learning portfolio competition. The project builds a long-only portfolio from model-generated stock-selection signals, validates the final CSV against the competition rules, and reports a chronological no-leakage self-test.
 
-> Educational and research use only. This repository is not investment advice and does not represent a live trading strategy.
+> Educational project only. This repository is not investment advice and does not represent a live trading strategy.
 
-The final Phase 2 portfolio uses:
+## Final Submission
 
-```text
-66% updated original submission-1 model portfolio
-34% official-style XGB baseline portfolio
-top 34 stocks
-equal weight
-```
-
-The final CSV is:
+The submitted Phase 2 portfolio is:
 
 ```text
 submissions/Yuxin_He_week2_orig66_xgb34_k34.csv
 ```
 
-## Method
-
-The submitted portfolio is a fixed-weight portfolio-level ensemble of two model-generated portfolios:
-
-1. `original_submission1_model_asof20260508.csv`
-   - A LGB-style model portfolio.
-   - The rolling self-test uses historical `pure_lgb_k40_sqrt_<asof>.csv` component portfolios generated at the corresponding as-of dates.
-
-2. `phase2_baseline_xgb_asof20260508.csv`
-   - Official-style XGBoost baseline component trained from scratch with self-contained OHLCV features and a 5-day target.
-   - The rolling self-test uses historical `baseline_xgb_<asof>.csv` portfolios generated at the corresponding as-of dates.
-
-The final construction blends the two portfolio-weight signals with fixed weights:
+It contains 34 CSI 500 constituents, equal weighted at `1/34 = 2.941%`. The final construction is a fixed portfolio-level ensemble:
 
 ```text
-blended_score = 0.66 * original_weight_signal + 0.34 * baseline_xgb_weight_signal
+66% updated LightGBM-style multi-horizon model portfolio
+34% official-style XGBoost baseline portfolio
+select top 34 by blended portfolio weight
+equal weight selected names
 ```
 
-Then it selects the top 34 stocks by `blended_score` and assigns equal weights. No manual stock pool, blacklist, target list, or hand-picked overlay is used.
+The key idea is to combine two complete model portfolios instead of averaging raw model scores. This avoids score-scale mismatch between LightGBM and XGBoost and makes the ensemble weight directly interpretable.
 
-## Reproduce the Submission
+## Repository Contents
+
+Core files:
+
+```text
+generate_submission.py          # rebuilds the final submitted CSV
+self_test.py                    # rolling no-leakage validation/test evaluation
+phase2_baseline_xgb.py          # self-contained official-style XGBoost component
+score_submission.py             # portfolio/benchmark/excess-return scorer
+validate_submission.py          # competition-rule validator
+download_data.py                # data snapshot downloader
+requirements.txt                # Python dependencies
+```
+
+LightGBM component support:
+
+```text
+factor_experiments_slim_asof20260430/features.py
+factor_experiments_slim_asof20260430/train_ensemble.py
+factor_experiments_slim_asof20260430/self_test_multihorizon_lgb.py
+```
+
+Archived outputs used by the final reproduction and self-test:
+
+```text
+submissions/Yuxin_He_week2_orig66_xgb34_k34.csv
+submissions/original_submission1_model_asof20260508.csv
+submissions/phase2_baseline_xgb_asof20260508.csv
+submissions/rolling_3d_compare/*.csv
+submissions/rolling_3d_baseline_xgb_phase2/*.csv
+logs/self_test_*.csv
+logs/self_test_summary.json
+```
+
+The rolling component CSV files are intentionally kept because `self_test.py` uses them to reconstruct historical as-of portfolios without lookahead. Raw market data and model binaries are not committed.
+
+## Quick Start
 
 Install dependencies:
 
@@ -49,137 +69,201 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
-Generate the submitted portfolio:
+Regenerate the final CSV from the included component portfolios:
 
 ```bash
 python generate_submission.py --out submissions/Yuxin_He_week2_orig66_xgb34_k34.csv
 ```
 
-Validate the portfolio:
+Validate the final portfolio:
 
 ```bash
 python validate_submission.py submissions/Yuxin_He_week2_orig66_xgb34_k34.csv
 ```
 
-These two commands use the included component portfolio CSV files and do not require the full market-data snapshot.
-
-Run the no-leakage self-test with return and IC metrics:
+Run the no-leakage self-test:
 
 ```bash
 python self_test.py
 ```
 
-The self-test writes:
+`self_test.py` requires the competition data files under `data/`:
 
 ```text
-logs/self_test_detail.csv
-logs/self_test_return_summary.csv
-logs/self_test_ic_summary.csv
-logs/self_test_baseline_comparison.csv
-logs/self_test_summary.json
+data/constituents.csv
+data/prices.parquet
+data/index.parquet
 ```
 
-## Self-Test Design
+If the data files are missing, download them with:
 
-The self-test uses rolling chronological splits. For each historical as-of date, it loads the component portfolios generated for that same as-of date, applies the same fixed 66/34 top34-equal recipe, and evaluates the subsequent 5-trading-day out-of-sample window.
-
-Validation windows:
-
-| As-of date | Evaluation window |
-|---|---|
-| 2026-03-13 | 2026-03-16 to 2026-03-20 |
-| 2026-03-20 | 2026-03-23 to 2026-03-27 |
-| 2026-03-27 | 2026-03-30 to 2026-04-03 |
-| 2026-04-03 | 2026-04-07 to 2026-04-13 |
-
-Test windows:
-
-| As-of date | Evaluation window |
-|---|---|
-| 2026-04-10 | 2026-04-13 to 2026-04-17 |
-| 2026-04-17 | 2026-04-20 to 2026-04-24 |
-| 2026-04-24 | 2026-04-27 to 2026-05-06 |
-
-For every row, the as-of date is strictly before the evaluation window, and the component portfolios are historical as-of files rather than the final 2026-05-08 portfolio.
-
-## IC Reporting
-
-Because the final output is a portfolio-level ensemble, IC is computed from model-generated portfolio scores:
-
-| Metric | Meaning |
-|---|---|
-| `blend_raw_rank_ic_full` | Spearman rank IC between the pre-top34 66/34 blended portfolio score and future 5-day stock returns over the CSI500 universe. |
-| `candidate_final_rank_ic_full` | Spearman rank IC between the final top34 equal-weight selection signal and future 5-day stock returns. Unselected stocks receive score 0. |
-| `baseline_raw_rank_ic_full` | Spearman rank IC of the official-style XGB component weight signal. |
-| `baseline_same_k_rank_ic_full` | Spearman rank IC of a top34 equal-weight version of the baseline signal, used as an apples-to-apples construction comparison. |
-
-The return self-test also compares against the official-style XGB baseline component on the same rolling windows.
-
-## Baseline Comparison Highlights
-
-`logs/self_test_baseline_comparison.csv` summarizes the no-leakage metrics that are directly comparable to the baseline:
-
-- mean excess-return advantage versus the official-style XGB baseline
-- cumulative excess-return advantage versus the official-style XGB baseline
-- share of windows where the submitted portfolio beats the baseline
-- IC advantage of the final top34 selection signal versus a top34 equal-weight baseline signal
-- IC advantage of the raw blended score versus the raw baseline score
-
-The archived seven-window walk-forward summary is intentionally reported in full:
-
-| Split | Windows | Mean excess-return advantage vs. XGB | Hit rate vs. XGB | Final-selection IC advantage |
-|---|---:|---:|---:|---:|
-| Validation | 4 | -0.30% | 25.0% | -0.0435 |
-| Test | 3 | +2.16% | 100.0% | +0.0993 |
-| All | 7 | +0.76% | 57.1% | +0.0177 |
-
-These are historical competition-window results, not estimates of future performance.
-
-## Included Code
-
-Core reproduction files:
-
-```text
-generate_submission.py
-self_test.py
-score_submission.py
-validate_submission.py
-phase2_baseline_xgb.py
-run_rolling_3d_baseline_xgb_phase2.py
-run_rolling_3d_two_versions.py
-search_original_baseline_blend.py
+```bash
+python download_data.py --start 20250101 --end 20260508
 ```
-
-The package also includes the Phase 1 feature/model support files used by the LGB-style component under `factor_experiments_slim_asof20260430/`.
 
 ## Data
 
-The GitHub repository intentionally excludes the local market-data snapshot. Download a fresh CSI 500 constituent list, stock OHLCV panel, and benchmark series with:
+The final submitted model uses only the data provided by the competition workflow:
 
-```bash
-python download_data.py --start 20250101 --end 20260421
-```
+- `prices.parquet`: daily stock OHLCV data
+- `index.parquet`: CSI 500 benchmark index data
+- `constituents.csv`: eligible CSI 500 stock universe
 
-This creates `data/constituents.csv`, `data/prices.parquet`, and `data/index.parquet`. The downloader uses public market-data interfaces exposed by AkShare; availability and field names may change over time.
+I intentionally excluded external datasets from the final package. During experimentation, I tested or considered industry labels, size/style controls, margin-financing-style variables, and northbound-flow-style variables. They were not included in the final model because their rolling validation gains were inconsistent and some introduced timestamp or reporting-lag risk.
 
-No private data, future data after an as-of date, other students' submissions, or manually selected stock lists are used by the documented pipeline.
+The repository excludes local market-data snapshots through `.gitignore`; only `data/.gitkeep` is tracked.
 
-## Repository Layout
+## Signal Design
+
+The final model focuses on short-horizon OHLCV signals rather than long-term firm quality. The prediction horizon is short, so the feature families are designed to capture near-term cross-sectional price pressure, liquidity, volatility, and continuation/reversal behavior.
+
+Main signal families:
+
+| Signal family | Examples | Purpose |
+|---|---|---|
+| Short-term momentum | 1/3/5/10/20-day returns and ranks | Captures recent winners and losers over short horizons. |
+| Reversal and acceleration | Return acceleration and short-window reversal terms | Separates persistent trends from overextended moves. |
+| Liquidity and volume pressure | Turnover averages, volume z-scores, amount ratios, Amihud-style illiquidity | Checks whether moves are supported by trading activity. |
+| Volatility and risk | Rolling volatility, volatility ratios, range, skewness, kurtosis | Captures short-term risk and instability. |
+| Price location and technical state | Moving-average ratios, RSI, MACD-style terms, distance to recent highs/lows | Measures breakout, consolidation, and support/resistance location. |
+| Intraday and overnight behavior | Overnight return, VWAP bias, close-strength-style features | Captures gap behavior and intraday buying/selling pressure. |
+
+The LightGBM-style component uses a richer 52-feature OHLCV set and a multi-horizon target. The XGBoost baseline component uses a smaller 14-feature set modeled after the official quick-start baseline, which makes it a useful regularizing component.
+
+## Model Components
+
+### 1. LightGBM-Style Multi-Horizon Component
+
+The first component is an updated version of my Phase 1 LightGBM-style model. It is trained on the provided OHLCV panel and predicts three forward-return horizons:
 
 ```text
-generate_submission.py                # exact 66/34 Top-34 recipe
-phase2_baseline_xgb.py                # self-contained XGBoost baseline
-self_test.py                          # chronological no-leakage evaluation
-validate_submission.py                # competition-rule checks
-score_submission.py                   # realized return/excess-return scoring
-factor_experiments_slim_asof20260430/ # Phase 1 LightGBM experiments
-submissions/                          # small component/output CSV files
-logs/                                 # archived self-test summaries
+TARGET_HORIZONS = (3, 5, 10)
 ```
+
+For each horizon, the training procedure uses chronological walk-forward validation:
+
+- 180 trading days for training
+- 20 trading days for validation
+- 5 trading days of embargo
+- 8 chronological folds
+- 60-trading-day recency half-life in sample weights
+- best-2 validation folds selected by validation IC
+
+The three horizon scores are blended with fixed weights:
+
+```text
+s_LGB = 0.50 * s_3d + 0.30 * s_5d + 0.20 * s_10d
+```
+
+The final current LightGBM-style component portfolio is:
+
+```text
+submissions/original_submission1_model_asof20260508.csv
+```
+
+### 2. Official-Style XGBoost Baseline Component
+
+The second component is a conservative XGBoost model trained from scratch with the smaller official-style feature set:
+
+```text
+ret_1d, ret_5d, ret_10d, ret_20d, ret_60d,
+vol_20d, volume_z_20d, turnover_ma_20d,
+close_over_ma20, close_over_ma60, rsi_14,
+ret_5d_rank, ret_20d_rank, vol_20d_rank
+```
+
+It predicts the 5-day forward return target and uses a chronological train/validation split with a 5-day embargo. The final current XGBoost component portfolio is:
+
+```text
+submissions/phase2_baseline_xgb_asof20260508.csv
+```
+
+### 3. Portfolio-Level Ensemble
+
+The final submission blends the component portfolio weights:
+
+```text
+blended_weight_signal_i = 0.66 * LGB_weight_i + 0.34 * XGB_weight_i
+```
+
+Then it selects the top 34 names by the blended weight signal and assigns equal weights. No manual stock pool, blacklist, target list, or hand-picked overlay is used.
+
+Why portfolio-level blending?
+
+- It avoids raw-score scale mismatch across model families.
+- It requires a stock to receive support from model-generated portfolios.
+- It reduces sensitivity to noisy rank differences near the top of the list.
+- Equal weighting keeps the final portfolio diversified and simple.
+
+## Self-Test Methodology
+
+The competition asked for a training/validation/test split with sound methodology and no leakage. The self-test uses rolling chronological splits. For each historical as-of date:
+
+1. Load the LightGBM-style and XGBoost component portfolios generated at that same as-of date.
+2. Apply the same fixed 66/34 top-34 equal-weight recipe.
+3. Score the resulting portfolio on the subsequent 5-trading-day out-of-sample window.
+4. Compare against the CSI 500 benchmark and the official-style XGBoost component.
+5. Compute rank IC between model-generated portfolio scores and future stock returns.
+
+The as-of date is always strictly before the evaluation window.
+
+Validation windows:
+
+| As-of date | Evaluation window | Role |
+|---|---|---|
+| 2026-03-13 | 2026-03-16 to 2026-03-20 | Model comparison |
+| 2026-03-20 | 2026-03-23 to 2026-03-27 | Model comparison |
+| 2026-03-27 | 2026-03-30 to 2026-04-03 | Model comparison |
+| 2026-04-03 | 2026-04-07 to 2026-04-13 | Model comparison |
+
+Test windows:
+
+| As-of date | Evaluation window | Role |
+|---|---|---|
+| 2026-04-10 | 2026-04-13 to 2026-04-17 | Held-out evaluation |
+| 2026-04-17 | 2026-04-20 to 2026-04-24 | Held-out evaluation |
+| 2026-04-24 | 2026-04-27 to 2026-05-06 | Held-out evaluation |
+
+## Results
+
+Return summary from `logs/self_test_return_summary.csv`:
+
+| Split | Windows | Mean portfolio | Mean benchmark | Mean excess | Worst excess | Hit rate | Cumulative excess |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Validation | 4 | -0.022% | -0.747% | +0.725% | -0.957% | 50.0% | +2.856% |
+| Test | 3 | +6.891% | +2.537% | +4.354% | +3.539% | 100.0% | +13.634% |
+| All | 7 | +2.941% | +0.661% | +2.280% | -0.957% | 71.4% | +16.879% |
+
+Baseline comparison from `logs/self_test_baseline_comparison.csv`:
+
+| Split | Mean excess advantage vs XGB | Cumulative advantage vs XGB | Hit rate vs XGB | Final-selection IC advantage |
+|---|---:|---:|---:|---:|
+| Validation | -0.298% | -1.293% | 25.0% | -0.0435 |
+| Test | +2.161% | +6.921% | 100.0% | +0.0993 |
+| All | +0.756% | +5.739% | 57.1% | +0.0177 |
+
+The model does not dominate the XGBoost baseline in the earlier validation period, but it outperforms meaningfully in the later held-out test windows. This is consistent with the report's interpretation that March to early April 2026 was a difficult regime for short-horizon signals, while the later April test regime was more favorable for momentum/liquidity-based OHLCV models.
+
+IC summary from `logs/self_test_ic_summary.csv`:
+
+| Split | Signal | Mean IC | ICIR | Positive rate |
+|---|---|---:|---:|---:|
+| Validation | Raw blended score | +0.0537 | +0.28 | 50.0% |
+| Validation | Final top-34 selection | +0.0177 | +0.12 | 25.0% |
+| Test | Raw blended score | +0.1935 | +3.84 | 100.0% |
+| Test | Final top-34 selection | +0.2118 | +5.79 | 100.0% |
+| All | Raw blended score | +0.1136 | +0.73 | 71.4% |
+| All | Final top-34 selection | +0.1009 | +0.68 | 57.1% |
 
 ## Reproducibility Notes
 
-- Every rolling evaluation uses component portfolios generated at that historical as-of date.
-- Evaluation windows begin strictly after their corresponding as-of dates.
-- The final blend weights and Top-34 equal-weight rule are fixed across windows.
-- Raw market data, trained model binaries, caches, and local credentials are excluded from version control.
+- The submitted CSV can be regenerated from `generate_submission.py` and the included current component portfolios.
+- `self_test.py` reconstructs historical portfolios from as-of-specific component CSV files.
+- Evaluation windows begin after their corresponding as-of dates.
+- The final blend weights and top-34 equal-weight rule are fixed across windows.
+- No external data, private data, other students' submissions, or manual stock-picking overlay is used.
+- Raw data files are excluded from Git; download them locally before running the full self-test.
+
+## Academic Integrity Note
+
+All model design, feature engineering, training logic, portfolio construction, and final selection decisions are documented in this repository and the accompanying report. AI coding assistants were used for implementation help and debugging, not for private data access or manual trading decisions.
